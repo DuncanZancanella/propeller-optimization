@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "propeller-optimization"
+version = "0.1.0"
+description = ""
+authors = ["DuncanZancanella <duncanbressanz@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+matplotlib = "^3.10.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
