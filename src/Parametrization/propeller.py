@@ -16,7 +16,7 @@ from scipy.interpolate import PchipInterpolator
 
 class Propeller():
 
-    def __init__(self, D_m:float, RPM:int, chord_dist_m:np.array = None, twist_dist_deg:np.array = None, 
+    def __init__(self, D_m:float, chord_dist_m:np.array = None, twist_dist_deg:np.array = None, 
                  sweep_dist_m:np.array = None, zhigh_dist_m:np.array = None, radial_dist_m:np.array = None, 
                  n_sections:int = None):
         """
@@ -39,7 +39,6 @@ class Propeller():
         """
         # --- Propeller chracteristics
         self.D_m:float = D_m # Diâmetro [m]
-        self.RPM:float = RPM # Revoluções por minuto (RPM)
 
         # --- Inputs
         self.radial_dist_m = radial_dist_m      # radial station for chord, twist and thick distributions
