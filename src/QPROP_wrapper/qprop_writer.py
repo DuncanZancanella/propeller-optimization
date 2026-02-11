@@ -1,5 +1,5 @@
-from geometry_reader import read_apc_geometry
-from xfoil_wrapper import XFoil, fit_qprop_parameters 
+#from geometry_reader import read_apc_geometry
+#from xfoil_wrapper import XFoil, fit_qprop_parameters 
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 from tabulate import tabulate
@@ -38,6 +38,9 @@ def generate_qprop_input(input_file, output_file, rpm, thrust = 0, vel = 0, n_ct
         Chooses whether the selected points in the geometry file are picked 
         uniformly ("uniform") or non-uniformly ("nonuniform").
     """
+    #
+    # PROBLEMAS: toda iteração interpola e roda xfoil
+    #
     
     radius, chord, twist, airfoils, thickness_ratio = read_apc_geometry(input_file, n_ctrl, mode=mode)
     
@@ -47,7 +50,7 @@ def generate_qprop_input(input_file, output_file, rpm, thrust = 0, vel = 0, n_ct
     yp_chord = np.array(chord, dtype = np.float64)
     yp_twist= np.array(twist, dtype = np.float64)
 
-    interp_chord = PchipInterpolator(xp, yp_chord)
+    interp_chord = PchipInterpolator(xp, yp_chord) # toda iteração interpola
     interp_twist = PchipInterpolator(xp, yp_twist)
     interp_thickRatio = PchipInterpolator(xp, thickness_ratio)
 
@@ -60,7 +63,7 @@ def generate_qprop_input(input_file, output_file, rpm, thrust = 0, vel = 0, n_ct
     adv_ratio  = vel / ( n * D )
     V = n * D * adv_ratio
 
-    xfoil = XFoil(f'airfoils/{airfoils[0][1]}', f'airfoils/{airfoils[1][1]}')
+    xfoil = XFoil(f'airfoils/{airfoils[0][1]}', f'airfoils/{airfoils[1][1]}') 
     trans1 = airfoils[0][0]  
     trans2 = airfoils[1][0]
 
@@ -100,8 +103,8 @@ def generate_qprop_input(input_file, output_file, rpm, thrust = 0, vel = 0, n_ct
         ])
         headers = ["Radius", "Chord", "Twist", "Alpha_eff", "Gamma", "Re", "Interp"]
 
-        results = xfoil.inte(frac, yi_thickness_ratio[i], alpha_start=-8, alpha_end=8, alpha_step=0.5, reynolds = reynolds)
-        data = fit_qprop_parameters(results, reynolds = reynolds, reexp=-0.5)
+        results = xfoil.inte(frac, yi_thickness_ratio[i], alpha_start=-8, alpha_end=8, alpha_step=0.5, reynolds = reynolds) # Interpola entre aerofólios e roda xfoil
+        data = fit_qprop_parameters(results, reynolds = reynolds, reexp=-0.5) # talvez definir Re minimo para n dar problema da curva
         CL0.append(data['CL0'])
         CL_a.append(data['CL_a'])
         CL_min.append(data['CLmin'])

@@ -15,3 +15,5 @@ from pathlib import Path
 SRC = Path(r"C:\Users\dunca\Desktop\UFSC\APC - Propeller data\src") # diretório no PC
 
 sys.path.insert(0, str(SRC))
+
+from Objects.Geometry import *

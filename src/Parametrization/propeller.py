@@ -16,9 +16,13 @@ from scipy.interpolate import PchipInterpolator
 
 class Propeller():
 
-    def __init__(self, D_m:float, chord_dist_m:np.array = None, twist_dist_deg:np.array = None, 
+    def __init__(self, N_blades:int, D_m:float, chord_dist_m:np.array = None, twist_dist_deg:np.array = None, 
                  sweep_dist_m:np.array = None, zhigh_dist_m:np.array = None, radial_dist_m:np.array = None, 
-                 n_sections:int = None):
+                 n_sections:int = None,
+                 mode:str = None, edge_factor:float = 0.5,
+                 
+                 code:str = 'prop_code'
+                 ):
         """
         Classe para definir principais características de uma hélice.
         ---
@@ -35,9 +39,15 @@ class Propeller():
         zhigh_dist_m = distribuição de diedro a partir da altura em relação ao centro do hub em [m]
 
         n_sections = número de seções para parametrização
+
+        mode = distribuição de pontos para parametrização das seções. Pode ser 'linear' ou 'nonlinear'
+
+        edge_factor = fator de concentração de pontos para distribuição das seções. Quanto mais próximo de zero, 
+            mais pontos ficarão concentradas na ponta da pá.
         
         """
         # --- Propeller chracteristics
+        self.N_blades = N_blades # Número de pás
         self.D_m:float = D_m # Diâmetro [m]
 
         # --- Inputs
@@ -53,6 +63,12 @@ class Propeller():
         self.twist_p_dist_deg = None
         self.sweep_p_dist_m = None
         self.zhigh_p_dist_m = None
+
+        self.DoF = n_sections
+        self.mode = mode
+        self.edge_factor = edge_factor
+
+        self.code:str = code
         
 
         # --- Tratamento das distribuições radiais r/R (vetor xi e r_station_m)
@@ -60,6 +76,7 @@ class Propeller():
             self.station_chord_m, self.station_twist_deg, self.station_thick_m, self.station_sweep_m, self.station_zhigh_m = radial_dist_m # posição radial dimensional em [m], pode ser array ou dataframe
 
             # faz com que distribuições r/R tenham mesmo array
+            """ --- ATUALIZAR AQUI --- """
             self.r_station_p_m, self.chord_p_dist_m, self.twist_p_dist_deg, self.sweep_p_dist_m, self.zhigh_p_dist_m  = self.parametrize(np.min(self.station_chord_m), np.max(self.station_chord_m) , 'PCHIP', self.n_sections) 
                     # cada distribuição tem um inicio/fim diferente, mas assume-se como referência o início e fim da corda
             
@@ -70,11 +87,13 @@ class Propeller():
                 # assume que as distribuições radiais de corda, torção e espessura possuem mesmo array 
             self.station_chord_m, self.station_twist_deg, self.station_thick_m, self.station_sweep_m, self.station_zhigh_m = radial_dist_m, radial_dist_m, radial_dist_m, radial_dist_m, radial_dist_m
 
-            self.xi, self.chord_p_dist_m, self.twist_p_dist_deg, self.sweep_p_dist_m, self.zhigh_p_dist_m  = self.parametrize(np.min(self.radial_dist_m), np.max(self.radial_dist_m), 'PCHIP', self.n_sections)
-            self.r_station_m = self.xi*(self.D_m/2)
+            self.r_station_p_m, self.chord_p_dist_m, self.twist_p_dist_deg, self.sweep_p_dist_m, self.zhigh_p_dist_m  = self.parametrize(np.min(self.radial_dist_m), np.max(self.radial_dist_m), 'PCHIP',
+                                                                                                                              self.DoF, self.mode, self.edge_factor)
+            self.xi = self.r_station_p_m/(np.max(self.station_chord_m))
 
 
-    def parametrize(self, hub_station_m:float, tip_station_m:float, parametrization:str, DoF:float):
+    def parametrize(self, hub_station_m:float, tip_station_m:float, parametrization:str, DoF:float, 
+                    mode:str = None, edge_factor:float = None):
         """
         Retorna as posições radiais ('r') de cada distribuição conforme número de seções e método de parametrização dado.
         Faz com que todas as distribuições radiais da hélice possuam array de mesmo tamanho e distribuições radiais iguais,
@@ -94,8 +113,22 @@ class Propeller():
                     - Considerar distribuição de espessura.
                     - Considerar distribuição não linear de pontos
         """
-        #Raio dimensional r (Posição de cada seção de aerofólio)
-        r_station_p_m = np.linspace(hub_station_m, tip_station_m, DoF + 1)
+
+        if mode == 'nonlinear':
+            uniform = np.linspace(0, 1, DoF + 1)
+            non_uniform = 0.5 * (1 - np.cos(np.pi * uniform**edge_factor))
+            non_uniform = non_uniform / non_uniform[-1] # adimensionalizando
+
+            # Posição radial r ao longo da pá
+            r_station_p_m = hub_station_m + non_uniform * (tip_station_m - hub_station_m) 
+            r_station_p_m = np.unique(r_station_p_m)    # garantir posições não repetidas
+
+            #print(f'Station = {r_station_p_m}')
+
+        else:
+            #Raio dimensional r (Posição de cada seção de aerofólio)
+            r_station_p_m = np.linspace(hub_station_m, tip_station_m, DoF + 1)
+
 
         if parametrization == 'PCHIP':
             chord_p = PchipInterpolator(self.station_chord_m, self.chord_dist_m, extrapolate=True)
@@ -121,3 +154,5 @@ class Propeller():
         r_station_p_m = np.delete(r_station_p_m, -1)
         
         return r_station_p_m, chord_p, twist_p, sweep_p, zhigh_p
+    
+

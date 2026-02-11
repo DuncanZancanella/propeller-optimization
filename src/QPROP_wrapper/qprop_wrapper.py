@@ -1,6 +1,12 @@
 import os
 import subprocess
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from Parametrization.propeller import *
+
+
 class QPROP_wrapper():
 
     def __init__(self, qprop_path, propfile_path, motorfile_path):
@@ -26,7 +32,10 @@ class QPROP_wrapper():
         """
         Executes QPROP via single-point run and writes an output file.
 
-        In case velocity_mps and rpm is not specific, qprop can be run to find these parameters for a given thrust or torque, 
+        Can execute a multi-point run replacing the float variables for a string in the format 'Var_init,Var_end,var_step'
+            or 'Var_init, Var_end/number_var'
+
+        In case velocity_mps and rpm are not specific, qprop can be run to find these parameters for a given thrust or torque, 
             specific inside extra_input.
         --- --- ---
 
@@ -71,12 +80,48 @@ class QPROP_wrapper():
                     text=True,
                     cwd=working_dir  
             )
+        
+    @staticmethod
+    def write_simple_prop_file(output_file_name, prop:Propeller, aerodynamic_coef:pd.DataFrame):
+        """
+            Gera o arquivo de hélice simples para input do QPROP.
+            A parametrização da hélice é feita no objeto prop, definindo geometria de entrada e 
+                número de seções para parametrização.
 
-# test case
-qprop = r"C:\Users\dunca\Desktop\UFSC\QPROP\qprop1.22\qprop.exe"
-prop = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\test_cases\run_qprop\CAM6x3F.txt"
-motor = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\test_cases\run_qprop\Speed-400-3321.txt"
+            Limitações:
+                - coeficientes aerodinâmicos únicos, portanto representa hélice de aerofólio fixo
 
-qprop_runner = QPROP_wrapper(qprop, prop, motor)
+            --- --- ---
+            output_file_name = nome do arquivo
 
-qprop_runner.run_single_point(0, 4000)
+            prop = objeto propeller, inicializado anteriormente
+
+            aerodynamic_coef = DataFrame de coeficientes aerodinâmicos de entrada
+        
+        """
+
+        header_parts = [
+            f"Simple propeller input file: {prop.code}",
+            f" {prop.N_blades}      {prop.D_m/2}    ! Nblades       [R]",
+            "",
+            f" {aerodynamic_coef["CL0"].iloc[0]}    {aerodynamic_coef["CL_a"].iloc[0]}  ! CL0     CL_a",
+            f" {aerodynamic_coef["CLmin"].iloc[0]}  {aerodynamic_coef["CLmax"].iloc[0]} ! CLmin   CLmax",
+            "",
+            f" {aerodynamic_coef["CD0"].iloc[0]}    {aerodynamic_coef["CD2u"].iloc[0]}  {aerodynamic_coef["CD2l"].iloc[0]}  {aerodynamic_coef["CLCD0"].iloc[0]} ! CD0   CD2u    CD2l    CLCD0",
+            f" {aerodynamic_coef["REref"].iloc[0]}  {aerodynamic_coef["REexp"].iloc[0]} ! REref REexp",
+            "",
+            " 0.0254  0.0254  1.0  ! Rfac   Cfac   Bfac", # assumindo entrada em polegadas
+            " 0.0     0.0     0.0  ! Radd   Cadd   Badd",
+            "",
+            "# r        chord       beta"
+            ]
+        header = "\n".join(header_parts)
+        with open(output_file_name, "w") as f:
+            f.write(header)
+            for r_i, chord_i, beta_i in zip(prop.r_station_p_m, prop.chord_p_dist_m, prop.twist_p_dist_deg):
+                f.write(
+                    f"\n {r_i:.2f}      {chord_i:.2f}       {beta_i:.2f}    " 
+                    )
+            
+            #print(f"Qprop propeller input file '{output_file}' created suscessfuly from {input_file} file")
+ 
