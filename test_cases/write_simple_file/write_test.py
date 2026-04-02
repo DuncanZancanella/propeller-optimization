@@ -34,6 +34,10 @@ prop_test = Propeller(
     mode='nonlinear', edge_factor=0.5
 )
 
+prop_performance = Performance()
+df_performance_data = prop_performance.read_data("10x45E")
+prop_performance.performance_map(df_radial_data, rpm_min=4000, rpm_max=8000, eta_range=[0.7])
+
 #plt.plot(prop.r_station_p_m, prop.chord_p_dist_m, 'x-', label='corda')
 #plt.xlabel('Posição radial ')
 #plt.ylabel('Corda ')
@@ -77,4 +81,10 @@ motor = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/w
 
 qprop_runner = QPROP_wrapper(qprop, prop, motor)
 
-qprop_runner.run_single_point('0, 25, 1', 0, Pele_W=600)
+velocity_input = '0.0, 25, 1'
+velocity_input = '0.0, 25/5'
+rpm_input = '4000'
+
+qprop_runner.run_single_point(velocity_input, rpm_input)
+
+qprop_runner.read_single_point_output(velocity_input, rpm_input)

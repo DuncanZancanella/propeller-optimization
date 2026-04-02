@@ -93,6 +93,31 @@ class QPROP_wrapper():
                     text=True,
                     cwd=working_dir  
             )
+
+    def read_single_point_output(self, velocity_input:str, rpm_input:str) -> pd.DataFrame:
+        """
+        Reads QPROP output file after single point analysis and save data in dataframe.
+
+        --- --- ---
+        velocity_input:str = string used for velocity input in run_single_point
+
+        rpm_input:str = string used for rpm input in run_single_point
+        """
+        # --- Guarantee that are string
+        velocity_input = str(velocity_input)
+        rpm_input = str(rpm_input)
+        
+        # - Verify if it has ",", for giving qprop the command for array input
+        velocity_array_condition:bool = "," in velocity_input
+        rpm_array_condition:bool = "," in rpm_input
+
+        print(f'vel array = {velocity_array_condition} \t rpm = {rpm_array_condition}')
+
+        # - Condition 1: one fixed value and one array as input
+
+        # - Condition 2: two arrays as input
+        return velocity_array_condition
+    
         
     @staticmethod
     def write_simple_prop_file(output_file_name, prop:Propeller, aerodynamic_coef:pd.DataFrame):
