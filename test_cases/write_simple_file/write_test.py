@@ -13,7 +13,7 @@ from src.QPROP_wrapper.qprop_wrapper import *
 # =======================================
 # 1) Inicialização hélice
 # =======================================
-prop_code:str = "20x10E"
+prop_code:str = "10x55MR"
 
 prop_APC = Geometry()
 df_radial_data, df_general_data = prop_APC.read_data(prop_code)
@@ -48,7 +48,7 @@ prop_test = Propeller(
 # 2) Criação do arquivo input para qprop
 # =======================================
 
-output_file = 'simple_prop_test.txt'
+output_file = 'simple_prop_test.txt' # aqui é interessante especificar uma pasa para output, de modo a sempre ter um padrão fixo de rotinas
 aero = {
          "CL0": [0.5],
          "CL_a": [5.8],
@@ -71,10 +71,10 @@ QPROP_wrapper.write_simple_prop_file(output_file, prop_test, df_aero)
 # 3) Teste de single-point run
 # =======================================
 
-qprop = r"C:\Users\dunca\Desktop\UFSC\QPROP\qprop1.22\qprop.exe"
-prop = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\test_cases\write_simple_file\simple_prop_test.txt"
-motor = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\test_cases\write_simple_file\motor_file_test.txt"
+qprop = r"/home/duncan/Desktop/26.1/projects/Qprop/bin/qprop"
+prop = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/simple_prop_test.txt"
+motor = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/motor_file_test.txt"
 
 qprop_runner = QPROP_wrapper(qprop, prop, motor)
 
-qprop_runner.run_single_point('0, 25, 1', 4600)
+qprop_runner.run_single_point('0, 25, 1', 0, Pele_W=600)

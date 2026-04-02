@@ -12,7 +12,7 @@ from pathlib import Path
 
 # --- Importar bibioteca APC-Propeller-Finder (definir diretório)
 
-SRC = Path(r"C:\Users\dunca\Desktop\UFSC\APC - Propeller data\src") # diretório no PC
+SRC = Path(r"/home/duncan/Desktop/26.1/projects/APC-Propeller-Finder/src") # diretório no PC
 
 sys.path.insert(0, str(SRC))
 

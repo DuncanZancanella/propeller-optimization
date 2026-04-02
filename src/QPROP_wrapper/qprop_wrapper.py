@@ -65,15 +65,28 @@ class QPROP_wrapper():
         """
         
         # --- qprop will run as in the input path
-        working_dir = os.path.dirname(self.propfile_path)
+        #working_dir = os.path.dirname(self.propfile_path)
         
         # --- get filename
-        p_name = os.path.basename(self.propfile_path)
-        m_name = os.path.basename(self.motorfile_path)
-        
+        prop_name_path = os.path.basename(self.propfile_path)
+        motor_name_path = os.path.basename(self.motorfile_path)
+
+        import shutil
+        working_dir = os.path.dirname(self.qprop_path)
+
+        # --- caminhos destino (dentro da pasta do qprop)
+        prop_dest = os.path.join(working_dir, prop_name_path)
+        motor_dest = os.path.join(working_dir, motor_name_path)
+
+        # --- copia arquivos
+        shutil.copy(self.propfile_path, prop_dest)
+        shutil.copy(self.motorfile_path, motor_dest)
+
+        # --- o qprop é executado na própria pasta, então faz-se uma copia dos arquivos motor/prop no local dele
+
         with open(output_file_name, 'w') as f:
                 subprocess.run(
-                    [self.qprop_path, p_name, m_name, str(velocity_mps), str(rpm), 
+                    [self.qprop_path, prop_name_path, motor_name_path, str(velocity_mps), str(rpm), 
                     str(Volt_V), str(dBeta_deg), str(Thrust_N), str(Torque_Nm), str(Amps_A), str(Pele_W)],
                     stdout=f,
                     stderr=subprocess.PIPE,
