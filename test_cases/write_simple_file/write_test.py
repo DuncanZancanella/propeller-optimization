@@ -13,7 +13,7 @@ from src.QPROP_wrapper.qprop_wrapper import *
 # =======================================
 # 1) Inicialização hélice
 # =======================================
-prop_code:str = "10x55MR"
+prop_code:str = "10x45MR"
 
 prop_APC = Geometry()
 df_radial_data, df_general_data = prop_APC.read_data(prop_code)
@@ -34,9 +34,9 @@ prop_test = Propeller(
     mode='nonlinear', edge_factor=0.5
 )
 
-prop_performance = Performance()
-df_performance_data = prop_performance.read_data("10x45E")
-prop_performance.performance_map(df_radial_data, rpm_min=4000, rpm_max=8000, eta_range=[0.7])
+#prop_performance = Performance()
+#df_performance_data = prop_performance.read_data("10x45E")
+#prop_performance.performance_map(df_radial_data, rpm_min=4000, rpm_max=8000, eta_range=[0.7])
 
 #plt.plot(prop.r_station_p_m, prop.chord_p_dist_m, 'x-', label='corda')
 #plt.xlabel('Posição radial ')
@@ -75,16 +75,20 @@ QPROP_wrapper.write_simple_prop_file(output_file, prop_test, df_aero)
 # 3) Teste de single-point run
 # =======================================
 
+# --- Definir diretórios
 qprop = r"/home/duncan/Desktop/26.1/projects/Qprop/bin/qprop"
 prop = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/simple_prop_test.txt"
-motor = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/motor_file_test.txt"
+motor = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/motor_draconis_1300KV.txt"
 
 qprop_runner = QPROP_wrapper(qprop, prop, motor)
 
-velocity_input = '0.0, 25, 1'
-velocity_input = '0.0, 25/5'
-rpm_input = '4000'
+# --- Definir inputs
+velocity_input = '0.0, 10, 1'
+rpm_input = '8000'
 
-qprop_runner.run_single_point(velocity_input, rpm_input)
+# --- rodar análise
+qprop_runner.run_single_point(velocity_input, rpm_input, Volt_V=14.8, output_file_name=r'/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/qprop_singlepoint_output.txt')
 
-qprop_runner.read_single_point_output(velocity_input, rpm_input)
+# --- ler outputs da análise
+df, df_local_properties = qprop_runner.read_single_point_output(velocity_input, rpm_input, output_file_name=r'/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/qprop_singlepoint_output.txt')
+

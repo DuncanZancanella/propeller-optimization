@@ -94,7 +94,7 @@ class QPROP_wrapper():
                     cwd=working_dir  
             )
 
-    def read_single_point_output(self, velocity_input:str, rpm_input:str) -> pd.DataFrame:
+    def read_single_point_output(self, velocity_input:str, rpm_input:str, output_file_name:str) -> pd.DataFrame:
         """
         Reads QPROP output file after single point analysis and save data in dataframe.
 
@@ -102,8 +102,18 @@ class QPROP_wrapper():
         velocity_input:str = string used for velocity input in run_single_point
 
         rpm_input:str = string used for rpm input in run_single_point
+
+        output_file_name = name of the qprop output file for reading
+
+        --- --- ---
+        OUTPUT
+
+        df = dataframe with performance output data
+
+        df_local_properties = dataframe with local blade section properties
+
         """
-        # --- Guarantee that are string
+        # --- Guarantee that they are strings
         velocity_input = str(velocity_input)
         rpm_input = str(rpm_input)
         
@@ -111,12 +121,56 @@ class QPROP_wrapper():
         velocity_array_condition:bool = "," in velocity_input
         rpm_array_condition:bool = "," in rpm_input
 
-        print(f'vel array = {velocity_array_condition} \t rpm = {rpm_array_condition}')
+        # - Condition 1: (one fixed value and one array as input) OR (two arrays as input)
+        if velocity_array_condition or rpm_array_condition:
+            df = pd.read_csv(output_file_name, sep='\s+', header=None, comment='#')
 
-        # - Condition 1: one fixed value and one array as input
+            df.columns = ['V(m/s)', 'rpm', 'Dbeta', 
+                          'T(N)','Q(N-m)','Pshaft(W)',
+                          'Volts','Amps','effmot',
+                          'effprop','adv','CT','CP',
+                          'DV(m/s)','eff',
+                          'Pelec','Pprop',
+                          'cl_avg','cd_avg']
+            
+            df_local_properties = None
 
-        # - Condition 2: two arrays as input
-        return velocity_array_condition
+        # - Condition 2: fixed velocity and fixed rpm as inputs (outputs blade local properties)
+        if not velocity_array_condition and not rpm_array_condition:
+
+            # -- Read sectional local blade properties
+            df_local_properties = pd.read_csv(output_file_name, sep='\s+', comment='#')
+
+            df_local_properties.columns = ['radius', 'chord', 'beta',
+                           'Cl', 'Cd', 'Re', 'Mach', 
+                           'effi', 'effp', 'Wa(m/s)', 
+                           'Aswirl', 'adv_wake']
+
+
+            # -- Read output performance data
+            # - find line where the data starts
+            with open(output_file_name, 'r') as f:
+                for i, line in enumerate(f):
+                    if "V(m/s)" in line:
+                        header_line = i
+                        break
+                    
+            # - read header + data line below
+            df = pd.read_csv(
+                output_file_name,
+                sep=r'\s+',
+                skiprows=header_line,
+                nrows=2,
+                header=0
+            )
+            # - extract data
+            df = df.iloc[[0]]
+            
+            # - remove '#'
+            df = df.replace('#', '', regex=True).apply(pd.to_numeric)
+            df = df.drop(columns=['#'])
+            
+        return df, df_local_properties
     
         
     @staticmethod
