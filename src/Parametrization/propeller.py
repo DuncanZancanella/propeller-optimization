@@ -91,7 +91,6 @@ class Propeller():
                                                                                                                               self.DoF, self.mode, self.edge_factor)
             self.xi = self.r_station_p_m/(np.max(self.station_chord_m))
 
-
     def parametrize(self, hub_station_m:float, tip_station_m:float, parametrization:str, DoF:float, 
                     mode:str = None, edge_factor:float = None):
         """
@@ -155,4 +154,31 @@ class Propeller():
         
         return r_station_p_m, chord_p, twist_p, sweep_p, zhigh_p
     
+
+    def show_planform(self, output_file='Propeller_PlanformView.png') -> None:
+        """
+        Plot propeller planform view and saves file.
+
+        --- --- ---
+
+        output_file = name and type of the image file.
+
+        """
+
+        leading_edge = 0.25*(self.chord_p_dist_m*np.cos(np.deg2rad(self.twist_p_dist_deg)) - self.sweep_p_dist_m)
+        trailing_edge = -0.75*(self.chord_p_dist_m*np.cos(np.deg2rad(self.twist_p_dist_deg)) - self.sweep_p_dist_m)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(self.xi, leading_edge, linewidth=2, color='black')
+        plt.plot(self.xi, trailing_edge, linewidth=2, color='black')
+        plt.hlines(y=0, xmin=min(self.xi), xmax=max(self.xi), label='1/4 chord')
+        plt.vlines(self.xi, trailing_edge, leading_edge, color='black', linestyle='--', linewidth=1, label='Sections')
+        plt.ylabel('Chord [in]')
+        plt.xlabel('Radial Position (r/R)')
+        plt.xlim(0, 1.1)
+        plt.ylim(-1.5*np.max(self.chord_p_dist_m), 1.5*np.max(self.chord_p_dist_m))
+        plt.legend()
+        plt.title(f'D = {self.D_m} m')
+        plt.savefig(output_file, dpi=300)
+
 

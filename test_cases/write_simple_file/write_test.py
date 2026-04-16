@@ -10,6 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.APC_Finder.apc_propeller_finder import *
 from src.QPROP_wrapper.qprop_wrapper import *
 
+
 # =======================================
 # 1) Inicialização hélice
 # =======================================
@@ -34,6 +35,9 @@ prop_test = Propeller(
     mode='nonlinear', edge_factor=0.5
 )
 
+
+prop_test.show_planform()
+
 #prop_performance = Performance()
 #df_performance_data = prop_performance.read_data("10x45E")
 #prop_performance.performance_map(df_radial_data, rpm_min=4000, rpm_max=8000, eta_range=[0.7])
@@ -52,7 +56,7 @@ prop_test = Propeller(
 # 2) Criação do arquivo input para qprop
 # =======================================
 
-output_file = 'simple_prop_test.txt' # aqui é interessante especificar uma pasa para output, de modo a sempre ter um padrão fixo de rotinas
+output_file = 'simple_prop_test.txt' # aqui é interessante especificar uma pasta para output, de modo a sempre ter um padrão fixo de rotinas
 aero = {
          "CL0": [0.5],
          "CL_a": [5.8],
@@ -83,12 +87,14 @@ motor = r"/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/w
 qprop_runner = QPROP_wrapper(qprop, prop, motor)
 
 # --- Definir inputs
-velocity_input = '0.0, 10, 1'
+velocity_input = '0.0'
 rpm_input = '8000'
 
 # --- rodar análise
-qprop_runner.run_single_point(velocity_input, rpm_input, Volt_V=14.8, output_file_name=r'/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/qprop_singlepoint_output.txt')
+#qprop_runner.run_single_point(velocity_input, rpm_input, Volt_V=14.8, output_file_name=r'/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/qprop_singlepoint_output.txt')
 
 # --- ler outputs da análise
-df, df_local_properties = qprop_runner.read_single_point_output(velocity_input, rpm_input, output_file_name=r'/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/qprop_singlepoint_output.txt')
+#df, df_local_properties = qprop_runner.read_single_point_output(velocity_input, rpm_input, output_file_name=r'/home/duncan/Desktop/26.1/projects/propeller-optimization/test_cases/write_simple_file/qprop_singlepoint_output.txt')
 
+# --- 1) Adicionar coef aerodinamicos de outros aerofolios
+# --- 2) add otimizador PSO
