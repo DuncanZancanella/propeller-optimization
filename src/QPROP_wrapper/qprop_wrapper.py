@@ -216,17 +216,34 @@ class QPROP_wrapper():
                     )
                 
     @staticmethod
-    def fit_parameters(df_polar_xfoil, reynolds, reexp=-0.5):
+    def fit_parameters(df_polar_xfoil, reynolds, reexp=-0.5) -> dict:
+        """
+        Based on a dataframe with polar XFOIL data (alpha, CL, CD), fit a linear function
+        for Cl-alpha curve and a quadratic function for Cl-Cd polar. Returns the data as a dictionary.
+        It might be necessary to change the fit condition to better capture the polar.
+
+        --- --- ---
+        INPUTS
+        df_polar_xfoil = dataframe containing data i the format (alpha, CL, CD, CDp, CM, Top_Xtr, Bot_Xtr)
+
+        reynolds 
+
+        reexp = Reynolds exponent parameter to fit.
+        --- --- ---
+        OUTPUTS
+
+        dictionary with CL0, CL_a, CLmin, CLmax, CD0, CD2u, CD2l, CLCD0, REref, REexp
+        
+        """
         alpha = df_polar_xfoil['alpha'].values
         CL    = df_polar_xfoil['CL'].values
         CD    = df_polar_xfoil['CD'].values
 
-        # CL0 and CL_alpha ----
+        # CL0 and CL_alpha ---- 
         dcl = np.gradient(CL, alpha)
-        mask = (dcl > 0.08) & (dcl < 0.11)
-
-        #print(mask)
+        mask = (dcl > 0.08) & (dcl < 0.11) # initial fit condition
         #mask = (alpha >= -2) & (alpha <= 6) ##original
+
         p = np.polyfit(alpha[mask], CL[mask], 1)
         CL_alpha_per_deg = p[0]  
         CL0 = np.polyval(p, 0.0) 
@@ -266,7 +283,7 @@ class QPROP_wrapper():
             "CLCD0": CLCD0,
             "REref": REref,
             "REexp": REexp
-        }
+        } 
 
 
 
