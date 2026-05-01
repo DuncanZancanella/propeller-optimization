@@ -17,7 +17,7 @@ class QPROP_wrapper():
         --- --- ---
         qprop_path = original qprop.exe path
 
-        propfile = propeller input file path
+        propfile = propeller input file path, assumed in [in]
 
         motorfile = motor input file path
         """
@@ -214,6 +214,65 @@ class QPROP_wrapper():
                 f.write(
                     f"\n {r_i:.2f}      {chord_i:.2f}       {beta_i:.2f}    " 
                     )
+                
+    @staticmethod
+    def fit_parameters(df_polar_xfoil, reynolds, reexp=-0.5):
+        alpha = df_polar_xfoil['alpha']
+        CL    = df_polar_xfoil['CL']
+        CD    = df_polar_xfoil['CD']
+
+        # CL0 and CL_alpha ----
+        dcl = np.gradient(CL, alpha)
+        mask = (dcl > 0.08) & (dcl < 0.11)
+
+        print(mask)
+        #mask = (alpha >= -2) & (alpha <= 6) ##original
+        p = np.polyfit(alpha[mask], CL[mask], 1)
+        CL_alpha_per_deg = p[0]  
+        CL0 = np.polyval(p, 0.0) 
+        CL_alpha = CL_alpha_per_deg * (180.0 / np.pi)  
+
+        # CLmin and CLmax ----
+        CLmin = np.min(CL)
+        CLmax = np.max(CL)
+
+        # CD polar 
+        idx_cdmin = np.argmin(CD)
+        CLCD0 = CL[idx_cdmin]
+        CD0 = CD[idx_cdmin]
+
+        def parabola(CL, CD2):
+            return CD0 + CD2 * (CL - CLCD0) ** 2
+
+        mask_upper = CL >= CLCD0
+        mask_lower = CL <= CLCD0
+
+        from scipy.optimize import curve_fit
+        CD2u, _ = curve_fit(parabola, CL[mask_upper], CD[mask_upper], p0=[0.05])
+        CD2l, _ = curve_fit(parabola, CL[mask_lower], CD[mask_lower], p0=[0.05])
+
+        # Re and Reexp ----
+        REref = reynolds
+        REexp = reexp
+
+        return {
+            "CL0": CL0,
+            "CL_a": CL_alpha,
+            "CLmin": CLmin,
+            "CLmax": CLmax,
+            "CD0": CD0,
+            "CD2u": CD2u[0],
+            "CD2l": CD2l[0],
+            "CLCD0": CLCD0,
+            "REref": REref,
+            "REexp": REexp
+        }
+
+
+
+
+
+
+
             
-            #print(f"Qprop propeller input file '{output_file}' created suscessfuly from {input_file} file")
  
