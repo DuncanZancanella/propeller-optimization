@@ -179,7 +179,7 @@ class XFOIL_wrapper():
 
 
 
-
+"""
 xfoil_path = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\XFOIL\xfoil.exe"
 airfoil_naca4412 = r'C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\src\Database\Airfoils_geometry\NACA4412.dat'
 
@@ -187,6 +187,7 @@ xfoil = XFOIL_wrapper(xfoil_path, airfoil_dat_path=airfoil_naca4412)
 
 polar = xfoil.aseq(-2, 5, 0.5, reynolds=200e3)
 print(polar)
+"""
 
 
 '''

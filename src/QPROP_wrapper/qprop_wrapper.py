@@ -217,15 +217,15 @@ class QPROP_wrapper():
                 
     @staticmethod
     def fit_parameters(df_polar_xfoil, reynolds, reexp=-0.5):
-        alpha = df_polar_xfoil['alpha']
-        CL    = df_polar_xfoil['CL']
-        CD    = df_polar_xfoil['CD']
+        alpha = df_polar_xfoil['alpha'].values
+        CL    = df_polar_xfoil['CL'].values
+        CD    = df_polar_xfoil['CD'].values
 
         # CL0 and CL_alpha ----
         dcl = np.gradient(CL, alpha)
         mask = (dcl > 0.08) & (dcl < 0.11)
 
-        print(mask)
+        #print(mask)
         #mask = (alpha >= -2) & (alpha <= 6) ##original
         p = np.polyfit(alpha[mask], CL[mask], 1)
         CL_alpha_per_deg = p[0]  
