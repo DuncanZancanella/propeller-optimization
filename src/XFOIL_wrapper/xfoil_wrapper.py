@@ -49,11 +49,10 @@ class XFOIL_wrapper():
         polar_file_output = name and path of the output file
         """
 
-        # --- Defines XFOIL path as the cwd
-        working_dir = os.path.dirname(self.xfoil_path)
+        # --- Defines airfoil dat file local path as the cwd
+        working_dir = os.path.dirname(self.airfoil_dat_path)
         airfoil_path = os.path.basename(self.airfoil_dat_path)
-        shutil.copy(self.airfoil_dat_path, os.path.join(working_dir, airfoil_path))
-
+  
         # --- List of XFOIL inputs in order 
         commands = [
             f'LOAD {airfoil_path}',
@@ -131,7 +130,7 @@ class XFOIL_wrapper():
         polar_file = Path of the output file
 
         """
-        data = np.loadtxt(polar_file, skiprows=12)
+        data = np.loadtxt(polar_file, skiprows=12, ndmin=2)
         
         return pd.DataFrame({
             'alpha': data[:, 0],
@@ -143,71 +142,85 @@ class XFOIL_wrapper():
             'Bot_Xtr': data[:, 6],
         })
     
-    def inte(self, frac, thickness_ratio, alpha_start, alpha_end, alpha_step, reynolds):
+    def inte(self, airfoil1, airfoil2, fraction_1to2, output_new_airfoil:Path):
+        # --- Defines XFOIL path as the cwd
+        working_dir = os.path.dirname(self.xfoil_path)
+
+        airfoil1_name = Path(airfoil1).stem
+        airfoil2_name = Path(airfoil2).stem
+
+        shutil.copy(airfoil1, os.path.join(working_dir, Path(airfoil1).name))
+        shutil.copy(airfoil2, os.path.join(working_dir, Path(airfoil2).name))
+
         commands = [
+            f'LOAD {Path(airfoil1).name}',
             'INTE',
-            'F',
-            f'{self.airfoil}.dat',
-            'F',
-            f'{self.airfoil}.dat',
-            f'{frac}',
-            'new',
-            'PANE',
-            'GDES',
-            'TSET',
-            f'{thickness_ratio}',
-            '',
-            'EXEC',
-            '',
-            'PPAR',
-            'N 160',
-            '',
-            '',
-            'OPER',
-            f'VISC {reynolds}',
-            'PACC',
-            'polar.txt',
-            '',
-            f'ASEQ {alpha_start} {alpha_end} {alpha_step}',
-            '',
+            'C'
+            'F'
+            f'{Path(airfoil2).name}',
+            f'F {fraction_1to2}',
+            '{airfoil1_name}_{airfoil2_name}_{fraction_1to2}',
+            'PCOP',
+            f'SAVE {airfoil1_name}_{airfoil2_name}_{fraction_1to2}.dat',
             'QUIT'
         ]
-        #print('\n'.join(commands))
-        self._run_commands(commands)
-        return self._parse_polar_file('polar.txt')
+        ## --- Run
+        df_output_polar = self._run_XFOIL(commands, working_dir, output_new_airfoil)
+
+        return df_output_polar
+
+    def _plot_polar(self, polar_file):
+        """
+        Recieves a polar.txt file and plots Cl-alpha and Cl-Cd
+        """
+        polar = np.loadtxt(polar_file, skiprows=12, ndmin=2)
+        
+        df_polar = pd.DataFrame({
+            'alpha': polar[:, 0],
+            'CL': polar[:, 1],
+            'CD': polar[:, 2],
+            'CDp': polar[:, 3],
+            'CM': polar[:, 4],
+            'Top_Xtr': polar[:, 5],
+            'Bot_Xtr': polar[:, 6],
+        })
+
+        DARK  = '#0f0f0f'
+        GRID  = '#2a2a2a'
+        CYAN  = '#00d4ff'
+
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5), facecolor=DARK)
+
+        for ax in axes:
+            ax.set_facecolor(DARK)
+            ax.tick_params(colors='white')
+            ax.grid(color=GRID, linewidth=0.8)
+
+        # --- Cl x Alpha
+        axes[0].plot(df_polar['alpha'], df_polar['CL'], color=CYAN, lw=2, marker='o', markersize=3)
+        axes[0].set_xlabel('Alpha [deg]', color='white')
+        axes[0].set_ylabel('Cl', color='white')
+        axes[0].set_title('Cl x Alpha', color='white', fontweight='bold')
+
+        # --- Cl x Cd (polar)
+        axes[1].plot(df_polar['CD'], df_polar['CL'], color=CYAN, lw=2, marker='o', markersize=3)
+        axes[1].set_xlabel('Cd', color='white')
+        axes[1].set_ylabel('Cl', color='white')
+        axes[1].set_title('Cl x Cd', color='white', fontweight='bold')
+
+        plt.tight_layout()
+        plt.show()
 
 
-
-
-"""
 xfoil_path = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\XFOIL\xfoil.exe"
 airfoil_naca4412 = r'C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\src\Database\Airfoils_geometry\NACA4412.dat'
+airfoil_e63 = r'C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\src\Database\Airfoils_geometry\E63.dat'
 
 xfoil = XFOIL_wrapper(xfoil_path, airfoil_dat_path=airfoil_naca4412)
+#xfoil.aseq(-15, 18, alpha_step=0.5, reynolds=60e3)
 
-polar = xfoil.aseq(-2, 5, 0.5, reynolds=200e3)
-print(polar)
-"""
+polar_output = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\polar.txt"
+xfoil._plot_polar(polar_output)
+#xfoil.inte(airfoil_naca4412, airfoil_e63, fraction_1to2=0.5, output_new_airfoil=None)
 
 
-'''
-xfoil = XFoil('airfoils/NACA0012', 'airfoils/NACA2412')
-results = xfoil.inte(0.5, thickness_ratio = 0.13 ,alpha_start=-10, alpha_end=10, alpha_step=0.5, reynolds = 4e5)
-
-plt.plot(results['alpha'], results['CL'])
-plt.xlabel('Alpha')
-plt.ylabel('CL')
-plt.grid()
-plt.show()
-
-data = fit_qprop_parameters(results, 4e5)
-print(
-    data["CL0"],
-    data["CL_a"],
-    data["CLmin"],
-    data["CLmax"],
-    data["CD0"],
-    data["CD2u"],
-    data["CD2l"],
-    data["CLCD0"])
-'''

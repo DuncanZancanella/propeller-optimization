@@ -1,0 +1,17 @@
+LOAD NACA4412.dat
+PANE
+ppar
+n
+300
+
+
+OPER
+VISC 60000.0
+ITER 1000
+PACC
+polar_temp.txt
+
+ASEQ -15 18 0.5
+PACC
+
+QUIT
