@@ -118,6 +118,8 @@ class XFOIL_wrapper():
 
         # --- returns data as DataFrame
         df_output_polar = self._read_polar_file(polar_file_output)
+
+        os.remove(input_file)
         
         return df_output_polar
        
@@ -169,25 +171,21 @@ class XFOIL_wrapper():
 
         return df_output_polar
 
-    def _plot_polar(self, polar_file):
+    def _save_polar_pdf(self, polar_file_list:Path, save_file:Path = 'polar_plot.pdf'):
         """
         Recieves a polar.txt file and plots Cl-alpha and Cl-Cd
+
+        --- --- ---
+        polar_file = list of Path containing xfoil output files for a single Reynolds.
+
+        save_file = Path for the pdf file saving the plots
         """
-        polar = np.loadtxt(polar_file, skiprows=12, ndmin=2)
-        
-        df_polar = pd.DataFrame({
-            'alpha': polar[:, 0],
-            'CL': polar[:, 1],
-            'CD': polar[:, 2],
-            'CDp': polar[:, 3],
-            'CM': polar[:, 4],
-            'Top_Xtr': polar[:, 5],
-            'Bot_Xtr': polar[:, 6],
-        })
+        from matplotlib.backends.backend_pdf import PdfPages
+
+        polar_file_list = list(polar_file_list)
 
         DARK  = '#0f0f0f'
         GRID  = '#2a2a2a'
-        CYAN  = '#00d4ff'
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 5), facecolor=DARK)
 
@@ -196,31 +194,67 @@ class XFOIL_wrapper():
             ax.tick_params(colors='white')
             ax.grid(color=GRID, linewidth=0.8)
 
-        # --- Cl x Alpha
-        axes[0].plot(df_polar['alpha'], df_polar['CL'], color=CYAN, lw=2, marker='o', markersize=3)
-        axes[0].set_xlabel('Alpha [deg]', color='white')
-        axes[0].set_ylabel('Cl', color='white')
-        axes[0].set_title('Cl x Alpha', color='white', fontweight='bold')
+        with PdfPages(save_file) as pdf:
+            for plot_file in polar_file_list:
+                import re
+                def _extract_reynolds_from_polar(plot_file):
+                    with open(plot_file, 'r') as f:
+                        content = f.read()
+                    match = re.search(r'Re =\s+([\d.]+)\s+e 6', content)
+                    if match:
+                        return float(match.group(1)) * 1e6
+                    return None
+                
+                Reynolds = _extract_reynolds_from_polar(plot_file)
 
-        # --- Cl x Cd (polar)
-        axes[1].plot(df_polar['CD'], df_polar['CL'], color=CYAN, lw=2, marker='o', markersize=3)
-        axes[1].set_xlabel('Cd', color='white')
-        axes[1].set_ylabel('Cl', color='white')
-        axes[1].set_title('Cl x Cd', color='white', fontweight='bold')
+                polar = np.loadtxt(plot_file, skiprows=12, ndmin=2)
+                
+                df_polar = pd.DataFrame({
+                    'alpha': polar[:, 0],
+                    'CL': polar[:, 1],
+                    'CD': polar[:, 2],
+                    'CDp': polar[:, 3],
+                    'CM': polar[:, 4],
+                    'Top_Xtr': polar[:, 5],
+                    'Bot_Xtr': polar[:, 6],
+                })
 
-        plt.tight_layout()
-        plt.show()
+                # --- Cl x Alpha
+                axes[0].plot(df_polar['alpha'].sort_values(), df_polar['CL'].sort_values(), 
+                                lw=2, marker='o', markersize=3, label=f'Re = {Reynolds/1e6} e6')
+                axes[0].set_xlabel('Alpha [deg]', color='white')
+                axes[0].set_ylabel('Cl', color='white')
+                axes[0].set_title('Cl x Alpha', color='white', fontweight='bold')
+                axes[0].legend()
+
+                # --- Cl x Cd (polar)
+                axes[1].plot(df_polar['CD'], df_polar['CL'],  lw=2, 
+                            marker='o', markersize=3, label=f'Re = {Reynolds/1e6} e6')
+                axes[1].set_xlabel('Cd', color='white')
+                axes[1].set_ylabel('Cl', color='white')
+                axes[1].set_title('Cl x Cd', color='white', fontweight='bold')
+                axes[1].legend()
+
+                plt.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
 
 
 xfoil_path = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\XFOIL\xfoil.exe"
 airfoil_naca4412 = r'C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\src\Database\Airfoils_geometry\NACA4412.dat'
 airfoil_e63 = r'C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\src\Database\Airfoils_geometry\E63.dat'
 
+
 xfoil = XFOIL_wrapper(xfoil_path, airfoil_dat_path=airfoil_naca4412)
-#xfoil.aseq(-15, 18, alpha_step=0.5, reynolds=60e3)
+xfoil.aseq(-5, 5, alpha_step=0.5, reynolds=500e3)
 
 polar_output = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\propeller-optimization\polar.txt"
-xfoil._plot_polar(polar_output)
+
+file2 = r'C:\Users\dunca\Downloads\polar_60e3.txt'
+file3 = r"C:\Users\dunca\Downloads\polar_70e3.txt"
+fil4 = r"C:\Users\dunca\Downloads\polar_80e3.txt"
+file5 = r"C:\Users\dunca\Downloads\polar_90e3.txt"
+#xfoil._save_polar_pdf([ file2, file5])
 #xfoil.inte(airfoil_naca4412, airfoil_e63, fraction_1to2=0.5, output_new_airfoil=None)
 
 
