@@ -196,17 +196,18 @@ class QPROP_wrapper():
             f"Simple propeller input file: {prop.code}",
             f" {prop.N_blades}      {prop.D_m/2}    ! Nblades       [R]",
             "",
-            f" {aerodynamic_coef["CL0"].iloc[0]}    {aerodynamic_coef["CL_a"].iloc[0]}  ! CL0     CL_a",
-            f" {aerodynamic_coef["CLmin"].iloc[0]}  {aerodynamic_coef["CLmax"].iloc[0]} ! CLmin   CLmax",
+            f' {aerodynamic_coef["CL0"].iloc[0]}    {aerodynamic_coef["CL_a"].iloc[0]}  ! CL0     CL_a',
+            f' {aerodynamic_coef["CLmin"].iloc[0]}  {aerodynamic_coef["CLmax"].iloc[0]} ! CLmin   CLmax',
             "",
-            f" {aerodynamic_coef["CD0"].iloc[0]}    {aerodynamic_coef["CD2u"].iloc[0]}  {aerodynamic_coef["CD2l"].iloc[0]}  {aerodynamic_coef["CLCD0"].iloc[0]} ! CD0   CD2u    CD2l    CLCD0",
-            f" {aerodynamic_coef["REref"].iloc[0]}  {aerodynamic_coef["REexp"].iloc[0]} ! REref REexp",
+            f' {aerodynamic_coef["CD0"].iloc[0]}    {aerodynamic_coef["CD2u"].iloc[0]}  {aerodynamic_coef["CD2l"].iloc[0]}  {aerodynamic_coef["CLCD0"].iloc[0]} ! CD0   CD2u    CD2l    CLCD0',
+            f' {aerodynamic_coef["REref"].iloc[0]}  {aerodynamic_coef["REexp"].iloc[0]} ! REref REexp',
             "",
             " 0.0254  0.0254  1.0  ! Rfac   Cfac   Bfac", # assumindo entrada em polegadas
             " 0.0     0.0     0.0  ! Radd   Cadd   Badd",
             "",
             "# r        chord       beta"
             ]
+
         header = "\n".join(header_parts)
         with open(output_file_name, "w") as f:
             f.write(header)

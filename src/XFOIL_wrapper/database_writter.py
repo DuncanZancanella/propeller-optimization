@@ -1,13 +1,24 @@
 import numpy as np 
 import os 
 import matplotlib.pyplot as plt 
-from xfoil_wrapper import XFoil
+from xfoil_wrapper import XFOIL_wrapper
+
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from QPROP_wrapper import qprop_wrapper as qpw
 import pandas as pd 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE_DIR, "xfoil_database_single_perfil.csv")
+#------------------------------------------------------------------------------//
+# Caminho genérico para a database
 
-def plot_polar(results, airfoil_name, Re, status, save_dir="plots"):
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT     = os.path.dirname(BASE_DIR) 
+DB_PATH  = os.path.join(ROOT, "Database", "xfoil_database_single_perfil.csv")
+#-----------------------------------------------------------------------------//
+
+
+def plot_polar(results, airfoil_name, Re, save_dir="plots"):
     '''
     Plota e salva os gráficos CL x alpha e CD x CL de uma polar.
  
@@ -44,7 +55,7 @@ def plot_polar(results, airfoil_name, Re, status, save_dir="plots"):
     ax[1].set_ylabel("CD")
     ax[1].grid(True)
 
-    fig.suptitle(f"{airfoil_name} | Re={Re:.0f} | {status}")
+    fig.suptitle(f"{airfoil_name} | Re={Re:.0f}")
     fig.tight_layout()
 
     filename = f"{save_dir}/{airfoil_name}_Re{int(Re)}.png"
@@ -124,7 +135,7 @@ def user_decision():
         if decision in ["y", "n"]:
             return decision == "y"
 
-def update_database(airfoils, Res, alpha_start, alpha_end, alpha_step, db_path=DB_PATH):
+def update_database(airfoils, Res, AIRFOIL_PATH, XFOIL_PATH, alpha_start=-10, alpha_end=12, alpha_step=0.5, db_path=DB_PATH):
     '''
     Executa o XFoil para cada combinação (airfoil, Re) e atualiza o banco CSV.
  
@@ -158,8 +169,8 @@ def update_database(airfoils, Res, alpha_start, alpha_end, alpha_step, db_path=D
     new_entries = []
  
     for airfoil in airfoils:
- 
-        xfoil        = XFoil(airfoil)
+        
+        xfoil        = XFOIL_wrapper(airfoil_dat_path=AIRFOIL_PATH, xfoil_path=XFOIL_PATH)
         airfoil_name = os.path.basename(airfoil).replace(".dat", "")
  
         for Re in Res:
@@ -245,8 +256,6 @@ def export_qprop(airfoil_name, Re, db_path=DB_PATH, output_path=None):
     ValueError
         Se a combinação (airfoil_name, Re) não for encontrada no banco.
     '''
-
-    from xfoil_wrapper import fit_qprop_parameters
  
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Banco não encontrado: {db_path}")
@@ -269,7 +278,7 @@ def export_qprop(airfoil_name, Re, db_path=DB_PATH, output_path=None):
         "CD":    subset["CD"].to_numpy(),
     }
  
-    params = fit_qprop_parameters(results, reynolds=Re)
+    params = qpw.QPROP_wrapper.fit_parameters(results, reynolds=Re)
  
     qprop_line = (
         f"{params['CL0']:10.5f}  {params['CL_a']:10.5f}  "
@@ -292,8 +301,7 @@ def export_qprop(airfoil_name, Re, db_path=DB_PATH, output_path=None):
  
     return params
 
-
-def update_database_by_polar(polar_file, db_path=DB_PATH):
+def update_database_by_polar(polar_file, Res, XFOIL_PATH, AIRFOIL_PATH, db_path=DB_PATH):
     '''
     Executa o XFoil para cada combinação (airfoil, Re) e atualiza o banco CSV.
  
@@ -312,6 +320,7 @@ def update_database_by_polar(polar_file, db_path=DB_PATH):
         Caminho completo do arquivo CSV do banco.
         Default: polar_database.csv na pasta do projeto.
     '''
+    xfoil        = XFOIL_wrapper(airfoil_dat_path=AIRFOIL_PATH, xfoil_path=XFOIL_PATH)
 
     if os.path.exists(db_path):
         db = pd.read_csv(db_path)
@@ -323,8 +332,7 @@ def update_database_by_polar(polar_file, db_path=DB_PATH):
     new_entries = []
  
     for airfoil in airfoils:
- 
-        xfoil        = XFoil(airfoil)
+         
         airfoil_name = os.path.basename(airfoil).replace(".dat", "")
  
         for Re in Res:
@@ -336,14 +344,13 @@ def update_database_by_polar(polar_file, db_path=DB_PATH):
             print(f"\nRodando {airfoil_name}  Re={Re}")
  
             try:
-                results = xfoil.aseq(alpha_start=alpha_start, alpha_end=alpha_end,
-                                     alpha_step=alpha_step, reynolds=Re)
+                results = xfoil._read_polar_file(polar_file)
+
             except Exception as e:
-                print(f"  Falha no XFoil: {e}")
+                print(f"  Falha na leitura da Polar: {e}")
                 continue
  
-            status = classify_polar(results)
-            plot_polar(results, airfoil_name, Re, status)
+            plot_polar(results, airfoil_name, Re, save_dir="plots")
  
             if not user_decision():
                 print("  Descartado")
@@ -364,26 +371,42 @@ def update_database_by_polar(polar_file, db_path=DB_PATH):
         print(f"\nBanco salvo: {db_path}  (+{len(new_df)} linhas, total {len(db)})")
     else:
         print("\nNenhuma entrada nova adicionada.")
-#-------------------------------------------------------#
+
+
+#----------------------------------------------------------------------------//
 # Exemplo de uso
+
+xfoil_path   = r"D:\Biblioteca\Documentos\Draconis-aero\rotorOptimization-main\xfoil\xfoil.exe"
+airfoil_path = r"C:\Users\prthi\Desktop\Otimização\propeller-optimization\src\Database\Airfoils_geometry"
+polar_path   = r"D:\Biblioteca\Documentos\Draconis-aero\rotorOptimization-main\xfoil\polar_teste_e63.txt"
+#xfoil = XFOIL_wrapper(xfoil_path, airfoil_dat_path=airfoil_naca4412)
 
 airfoils = [
     #'airfoils/NACA0012.dat',
     #'airfoils/NACA2412.dat',
     #'airfoils/NACA4412.dat'
     #'airfoils/ClarkY.dat'
-    'airfoils/E63.dat'
+    '/E63.dat'
     #'airfoils/s1223.dat'
-    
     ]
 
 #Re = [50000, 80000, 100000, 120000, 150000]
-Re = [50000, 70000, 100000, 120000, 140000]
+Re = [100000, 150000, 200000, 250000, 300000]
 Re = [100000]
-for airfoil in airfoils:
+
+'''for airfoil in airfoils:
     update_database(
         airfoils    = [airfoil],
         Res         = Re,
         alpha_start = -5,
         alpha_end   = 8,
-        alpha_step  = 0.5 )
+        alpha_step  = 0.5,
+        XFOIL_PATH  = xfoil_path,
+        AIRFOIL_PATH= airfoil_path + airfoil)'''
+
+for airfoil in airfoils:
+    update_database_by_polar(
+        AIRFOIL_PATH= airfoil_path + airfoil,
+        XFOIL_PATH  = xfoil_path,
+        Res         = Re,
+        polar_file  = polar_path)
