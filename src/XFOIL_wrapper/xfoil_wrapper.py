@@ -28,7 +28,7 @@ class XFOIL_wrapper():
         self.airfoil_dat_path   = airfoil_dat_path             
 
     def aseq(self, alpha_start:float, alpha_end:float, alpha_step:float, reynolds:float, 
-             iter:int = 1000, panels:int = 300, polar_file_output:Path = r'polar.txt', vacc=0.01):
+             iter:int = 1000, panels:int = 300, polar_file_output:Path = r'polar.txt', vacc=0.01, Ncrit = 9):
         """
         Angle of Attack Sequence: runs XFOIL for a given airfoil, reynolds number and alpha range, executes viscous analysis and creates 
             polar file to save the data. Creates an polar output file
@@ -72,10 +72,10 @@ class XFOIL_wrapper():
             f'ITER {iter}',
             'vpar',
             f'vacc {vacc}',
-            'xtr',
-            f'0.9', #x_tr_upper
-            f'0.8', #x_tr_lower
-            f'N {9}',
+            #'xtr',
+            #f'0.9', #x_tr_upper
+            #f'0.8', #x_tr_lower
+            f'N {Ncrit}',
             '',
             'PACC',
             'polar_temp.txt',           # temporary file is created, then deleted
@@ -251,30 +251,3 @@ class XFOIL_wrapper():
                 plt.tight_layout()
             pdf.savefig(fig)
             plt.close(fig)
-
-"""
-#xfoil_path = r"C:\Users\dunca\Desktop\UFSC\Propeller_optimization\XFOIL\xfoil.exe"
-xfoil_path = r'/usr/bin/xfoil'
-airfoil_naca4412 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/src/Database/Airfoils_geometry/NACA4412.dat'
-airfoil_e63 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/src/Database/Airfoils_geometry/E63.dat'
-
-xfoil = XFOIL_wrapper(xfoil_path, airfoil_dat_path=airfoil_naca4412)
-#xfoil.aseq(-12, 18, alpha_step=0.5, reynolds=330e3, panels=300, vacc=0.0)
-
-polar_output = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/polar.txt'
-
-file1 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_50e3.txt'
-file2 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_60e3.txt'
-file3 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_70e3.txt'
-file4 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_80e3.txt'
-file5 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_90e3.txt'
-file6 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_100e3.txt'
-
-file7 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_150e3.txt'
-file8 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_200e3.txt'
-file9 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_250e3.txt'
-file10 = r'/home/duncan/Desktop/26.1/projects/propeller-optimization/low_reynolds_test/polar_300e3.txt'
-
-
-xfoil._save_polar_pdf([polar_output])
-xfoil._save_polar_pdf([file1, file6, file7, file8, file9, file10])"""
