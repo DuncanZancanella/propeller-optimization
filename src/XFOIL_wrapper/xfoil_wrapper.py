@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 import subprocess
 import os
+import re
 from pathlib import Path
 import shutil
 import pandas as pd
@@ -157,6 +158,15 @@ class XFOIL_wrapper():
             'Bot_Xtr': data[:, 6],
         })
     
+    def _extract_reynolds_from_polar(self, plot_file):
+        with open(plot_file, 'r') as f:
+            content = f.read()
+        match = re.search(r'Re =\s+([\d.]+)\s+e 6', content)
+        if match:
+            return float(match.group(1)) * 1e6
+        return None
+                
+    
     def inte(self, airfoil1, airfoil2, fraction_1to2, output_new_airfoil:Path):
         # --- Defines XFOIL path as the cwd
         working_dir = os.path.dirname(self.xfoil_path)
@@ -209,16 +219,8 @@ class XFOIL_wrapper():
 
         with PdfPages(save_file) as pdf:
             for plot_file in polar_file_list:
-                import re
-                def _extract_reynolds_from_polar(plot_file):
-                    with open(plot_file, 'r') as f:
-                        content = f.read()
-                    match = re.search(r'Re =\s+([\d.]+)\s+e 6', content)
-                    if match:
-                        return float(match.group(1)) * 1e6
-                    return None
                 
-                Reynolds = _extract_reynolds_from_polar(plot_file)
+                Reynolds = self._extract_reynolds_from_polar(plot_file)
 
                 polar = np.loadtxt(plot_file, skiprows=12, ndmin=2)
                 
